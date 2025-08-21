@@ -210,6 +210,8 @@ enddef
 
 def InitGame()
 	score = 0
+	activity = MENU 
+	direction = NONE
 	highscore = g:SUPRA_SNAKE_HIGHSCORE
 	# initialize the game map with full 0 and 1
 	# 1 tile = width / 2 and 1 height
