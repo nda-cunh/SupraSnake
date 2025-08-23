@@ -16,9 +16,11 @@ const height = 30
 const MENU = 0
 const PLAY = 1
 const GAMEOVER = 2
+const GAMEOVER_2 = 3
 
 # Sprites
 const SP_SNAKE_HEAD = '🟨'
+const SP_SNAKE_HEAD_DEAD = '💀'
 const SP_SNAKE = '🟩'
 const SP_WALL = '🟦'
 const SP_EMPTY = '  '
@@ -106,9 +108,20 @@ export def Run()
 			SnakeMove()
 			DrawGame()
 		elseif activity == GAMEOVER
+			DrawGame()
+		elseif activity == GAMEOVER_2
 			DrawGameOver()
 		endif
 	}, {repeat: -1})
+enddef
+
+def GameOver()
+	activity = GAMEOVER
+	highscore = max([highscore, score])
+	g:SUPRA_SNAKE_HIGHSCORE = highscore
+	timer_start(1000, (_) => {
+		activity = GAMEOVER_2
+	})
 enddef
 
 def KeyFilter(wid: number, key: string): number
@@ -147,30 +160,33 @@ def KeyFilter(wid: number, key: string): number
 
 	# Play Activity
 	if activity == PLAY
-		if key ==? 'w' || key == "\<up>"
-			if direction != DOWN
+		const head = snake[-1]
+		const neck = snake[-2]
+		if key ==? 'w' || key == "\<up>" || key == "k"
+			if neck.y >= head.y
 				direction = UP
+				return 1
 			endif
 			return 1
-		elseif key ==? 's' || key == "\<down>"
-			if direction != UP
+		elseif key ==? 's' || key == "\<down>" || key == "j"
+			if neck.y <= head.y
 				direction = DOWN
 			endif
 			return 1
-		elseif key ==? 'a' || key == "\<left>"
-			if direction != RIGHT && direction != NONE
+		elseif key ==? 'a' || key == "\<left>" || key == "h"
+			if neck.x >= head.x
 				direction = LEFT
 			endif
 			return 1
-		elseif key ==? 'd' || key == "\<right>"
-			if direction != LEFT
+		elseif key ==? 'd' || key == "\<right>" || key == "l"
+			if neck.x <= head.x
 				direction = RIGHT
 			endif
 			return 1
 		endif
 	endif
 
-	if activity == GAMEOVER
+	if activity == GAMEOVER_2
 		if key ==? "\<Enter>"
 			InitGame()
 			activity = PLAY
@@ -235,6 +251,11 @@ def InitGame()
 	
 	var h = height_max / 2
 	snake = []
+	add(snake, { x: 1, y: h })
+	add(snake, { x: 2, y: h })
+	add(snake, { x: 3, y: h })
+	add(snake, { x: 4, y: h })
+	add(snake, { x: 5, y: h })
 	add(snake, { x: 6, y: h })
 	add(snake, { x: 7, y: h })
 	add(snake, { x: 8, y: h })
@@ -244,21 +265,37 @@ def InitGame()
 enddef
 
 def ClearMap()
-	var width_max = width / 2 # because emojis are 2 characters wide
-	var height_max = height
+	const width_max = width / 2 # because emojis are 2 characters wide
+	const height_max = height
+
 	# Clear the map with only wall and empty spaces
-	for i in range(height_max)
-		for j in range(width_max)
+	var i = 0
+	while i < height_max  
+		var j = 0
+		while j < width_max 
 			if i == 0 || i == height_max - 1 || j == 0 || j == width_max - 1
 				map[i][j] = WALL
 			elseif map[i][j] == FOOD
-				# Do not clear food, it will be removed when the snake eats it
 				map[i][j] = FOOD
 			else
 				map[i][j] = EMPTY
 			endif
-		endfor
-	endfor
+			j += 1
+		endwhile
+		i += 1
+	endwhile
+
+	const len_snake = len(snake)
+	i = 0
+	while i < len_snake
+		const s = snake[i]
+		if i == len_snake - 1
+			map[s.y][s.x] = SNAKE_HEAD
+		else
+			map[s.y][s.x] = SNAKE
+		endif
+		i += 1
+	endwhile
 enddef
 
 def SnakeMove()
@@ -269,7 +306,8 @@ def SnakeMove()
 	var head = snake[-1]
 	var new_head = { x: head.x, y: head.y }
 
-	# Move the snake in the current direction
+	# Move the snake in the current direction unless it is going back on
+	# itself
 	if direction == UP
 		new_head.y -= 1
 	elseif direction == DOWN
@@ -282,9 +320,7 @@ def SnakeMove()
 
 	# Check for collision with walls or itself
 	if map[new_head.y][new_head.x] == WALL || map[new_head.y][new_head.x] == SNAKE
-		activity = GAMEOVER
-		highscore = max([highscore, score])
-		g:SUPRA_SNAKE_HIGHSCORE = highscore
+		GameOver()
 		return
 	endif
 
@@ -306,6 +342,7 @@ def SnakeMove()
 enddef
 
 def RandomFood()
+	ClearMap()
 	# Place food in a random empty space
 	var empty_spaces = []
 	for i in range(len(map))
@@ -427,14 +464,6 @@ enddef
 
 def DrawGame()
 	ClearMap()
-	for i in range(len(snake))
-		var s = snake[i]
-		if i == len(snake) - 1
-			map[s.y][s.x] = SNAKE_HEAD
-		else
-			map[s.y][s.x] = SNAKE
-		endif
-	endfor
 	var print_map = []
 	DrawScore(print_map)
 	for i in range(len(map))
@@ -449,7 +478,11 @@ def DrawGame()
 			elseif map[i][j] == SNAKE
 				line ..= SP_SNAKE
 			elseif map[i][j] == SNAKE_HEAD
-				line ..= SP_SNAKE_HEAD
+				if activity == GAMEOVER
+					line ..= SP_SNAKE_HEAD_DEAD
+				else
+					line ..= SP_SNAKE_HEAD
+				endif
 			endif
 		endfor
 		add(print_map, line)
