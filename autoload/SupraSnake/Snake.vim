@@ -250,17 +250,14 @@ def InitGame()
 	# Add the snake
 	
 	var h = height_max / 2
-	snake = []
-	add(snake, { x: 1, y: h })
-	add(snake, { x: 2, y: h })
-	add(snake, { x: 3, y: h })
-	add(snake, { x: 4, y: h })
-	add(snake, { x: 5, y: h })
-	add(snake, { x: 6, y: h })
-	add(snake, { x: 7, y: h })
-	add(snake, { x: 8, y: h })
-	add(snake, { x: 9, y: h })
-	add(snake, { x: 10, y: h }) # head of the snake
+		snake = [
+		{x: 5, y: h},
+		{x: 6, y: h},
+		{x: 7, y: h},
+		{x: 8, y: h},
+		{x: 9, y: h},
+		{x: 10, y: h} # head of the snake
+	]
 	RandomFood()
 enddef
 
