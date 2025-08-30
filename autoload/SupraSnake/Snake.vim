@@ -4,10 +4,6 @@ vim9script
 ## Const and Variables
 ################################
 
-if !exists('g:SUPRA_SNAKE_HIGHSCORE')
-	g:SUPRA_SNAKE_HIGHSCORE = 0
-endif
-
 # Window size
 const width = 80
 const height = 30
